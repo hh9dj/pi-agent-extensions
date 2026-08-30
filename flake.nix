@@ -8,13 +8,14 @@
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
     in
     {
-      devShells.x86_64-linux = {
-        default = pkgs.mkShell {
-          packages = with pkgs; [ ];
-          shellHook = "";
-        };
-        # alternative shell profile : nix develop .#special
-        special = pkgs.mkShell { };
+      devShells.x86_64-linux.default = pkgs.mkShell {
+        packages = [
+          pkgs.nodejs
+          pkgs.typescript-go
+        ];
+        shellHook = ''
+          test -d node_modules || npm install
+        '';
       };
     };
 }
