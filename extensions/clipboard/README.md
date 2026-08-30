@@ -33,14 +33,3 @@ Config file: `~/.pi/agent/clipboard.json`
 ```json
 { "enabled": true }
 ```
-
-- Missing/invalid file → enabled (default).
-- Read fresh on every settle → editing the file takes effect without `/reload`.
-- On NixOS the file is managed by `nixos/pi-agent/default.nix` — flip the
-  `enabled` value there and rebuild.
-
-## Manual steps
-
-None. The extension is auto-discovered through the existing
-`~/.pi/agent/extensions` symlink (`home-manager switch` / rebuild already
-refreshes everything).

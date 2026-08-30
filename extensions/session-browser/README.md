@@ -16,20 +16,3 @@ What it does:
    `extensions/session-browser/index.html`.
 4. Opens the index in the browser; clicking an entry opens that session's
    pre-exported HTML page.
-
-Details:
-
-- Export theme follows `settings.json` `theme` (light/dark/custom),
-  read per run; auto pairs like "light/dark" fall back to the active
-  theme — same as `/export`.
-- No dependencies, no server — pure static files. Re-run
-  `/browse-sessions` whenever you want new/updated sessions included.
-- Fast: 69 sessions export in under half a second; reruns only touch
-  changed sessions (mtime cache).
-- Note: `exportSessionToHtml` is not on the public package surface. The
-  extension deep-imports `dist/core/export-html/index.js` (path derived
-  from public `getPackageDir()`) — if a pi update moves that module the
-  command errors loudly, one-line fix.
-- Install: the extensions dir is symlinked into pi's config dir by
-  `nixos/pi-agent/default.nix` — a new subdirectory appears automatically.
-  `/reload` in pi (or restart) to pick it up.
