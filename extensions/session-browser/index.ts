@@ -17,8 +17,8 @@
 // (only via AgentSession). Deep import of the internal module; if pi
 // exports it publicly, swap away these two lines.
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, createReadStream } from "node:fs";
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { readFileSync, createReadStream } from "node:fs";
+import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { basename, join } from "node:path";
 
@@ -39,31 +39,6 @@ let exportSessionToHtml: ExportSessionToHtml | undefined;
 const INDEX_TEMPLATE = readFileSync(join(__dirname, "index.html"), "utf8");
 // __dirname is injected by pi's jiti loader (import.meta.url is a data URL).
 declare const __dirname: string;
-
-/**
- * Theme from settings.json (`theme` key). Auto pairs like "light/dark" are
- * already resolved by the running pi terminal detection — pass nothing and
- * the export falls back to the active theme via currentThemeName.
- * Invalid/unfindable names → undefined → active theme.
- */
-async function getConfiguredTheme(): Promise<string | undefined> {
-    try {
-        const settings = (await readFile(
-            join(getAgentDir(), "settings.json"),
-            "utf8",
-        )) as string;
-        const theme = (
-            JSON.parse(settings) as { theme?: string }
-        ).theme?.trim();
-        if (!theme || theme.includes("/")) return undefined;
-        if (theme === "dark" || theme === "light") return theme;
-        return existsSync(join(getAgentDir(), "themes", `${theme}.json`))
-            ? theme
-            : undefined;
-    } catch {
-        return undefined;
-    }
-}
 
 async function getExportSessionToHtml(): Promise<ExportSessionToHtml> {
     if (!exportSessionToHtml) {
@@ -150,13 +125,7 @@ export default function initExtension(pi: ExtensionAPI) {
                 a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
             );
             const indexPath = join(exportDir, "index.html");
-            await writeFile(
-                indexPath,
-                buildIndex(
-                    sessions,
-                    (await getConfiguredTheme()) === "light" ? "light" : "dark",
-                ),
-            );
+            await writeFile(indexPath, buildIndex(sessions));
             openBrowser(indexPath);
 
             if (ctx.hasUI)
@@ -184,7 +153,6 @@ async function exportSession(jsonl: string, html: string): Promise<void> {
     const fn = await getExportSessionToHtml();
     await fn(SessionManager.open(jsonl), undefined, {
         outputPath: html,
-        themeName: await getConfiguredTheme(),
     });
 }
 
@@ -233,10 +201,10 @@ async function readSession(
     return info;
 }
 
-function buildIndex(sessions: SessionInfo[], theme: "light" | "dark"): string {
+function buildIndex(sessions: SessionInfo[]): string {
     // Escape `<` so user data can't break out of the JSON script block.
     const data = JSON.stringify(sessions).replace(/</g, "\\u003c");
-    return INDEX_TEMPLATE.replace("__DATA__", data).replace("__THEME__", theme);
+    return INDEX_TEMPLATE.replace("__DATA__", data);
 }
 
 function openBrowser(path: string): void {

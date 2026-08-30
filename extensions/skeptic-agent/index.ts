@@ -6,12 +6,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 import { AskUserParamsSchema, type AskUserParams } from "./schemas";
-import {
-    runForm,
-    type Answer,
-    type UiQuestion,
-    type UiResult,
-} from "./form-tui";
+import { runForm, type Answer } from "./form-tui";
 
 // ─── Registering the tool ──────────────────────────────────────────────────
 // `export default function initExtension(pi)` is the entry point pi calls when
@@ -54,16 +49,8 @@ export default function initExtension(pi: ExtensionAPI) {
                     "skeptic_agent requires an interactive TUI session.",
                 );
             }
-            // Clean up the LLM input into our internal UiQuestion shape.
-            // The schema already matches UiQuestion, so this is just trimming.
-            // `options: []` = free-text question.
-            const questions: UiQuestion[] = params.questions.map((raw) => ({
-                header: raw.header.trim(),
-                questionText: raw.question.trim(),
-                options: raw.options,
-                isMultipleChoice: raw.isMultipleChoice,
-            }));
-
+            // `options: []` = free-text question. Schema is the single
+            // source for the question shape; pass it through as-is.
             // Tell the TUI "tool is waiting for the user" so it doesn't look
             // frozen. See pi-ask-user/supi-ask-user for the same pattern.
             onUpdate?.({
@@ -74,9 +61,9 @@ export default function initExtension(pi: ExtensionAPI) {
             // Hide the spinner while the form is up.
             ctx.ui.setWorkingVisible(false);
 
-            let result: UiResult | null;
+            let result: Answer[] | null;
             try {
-                result = await runForm(ctx, questions, signal); // Open form and wait until the user submits or cancels.
+                result = await runForm(ctx, params.questions, signal); // Open form and wait until the user submits or cancels.
             } finally {
                 ctx.ui.setWorkingVisible(true);
             }
@@ -95,7 +82,7 @@ export default function initExtension(pi: ExtensionAPI) {
             }
 
             // Turn answers into a compact text summary the LLM reads.
-            const summary = result.answers
+            const summary = result
                 .map(
                     (answer) =>
                         `${answer.header}: ${answer.values.join(", ") || "(no selection)"}`,
@@ -106,7 +93,7 @@ export default function initExtension(pi: ExtensionAPI) {
             // session for later rendering/state reconstruction.
             return {
                 content: [{ type: "text", text: `User answers:\n${summary}` }],
-                details: { cancelled: false, answers: result.answers },
+                details: { cancelled: false, answers: result },
             };
         },
     });

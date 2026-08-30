@@ -36,7 +36,7 @@ const OptionSchema = Type.Object({
     ),
 });
 
-// A single question. It mirrors UiQuestion in index.ts.
+// A single question — the type the TUI form consumes.
 const QuestionSchema = Type.Object({
     question: Type.String({
         description: "Complete question to ask",
@@ -69,4 +69,5 @@ export const AskUserParamsSchema = Type.Object({
 
 // TypeScript types derived from the schemas.
 export type AskUserParams = Static<typeof AskUserParamsSchema>;
+export type Question = Static<typeof QuestionSchema>;
 export type Option = Static<typeof OptionSchema>;

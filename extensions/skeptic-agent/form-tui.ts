@@ -6,27 +6,16 @@ import {
     visibleWidth,
     wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
-import type { Option } from "./schemas";
+import type { Option, Question } from "./schemas";
 
 // The "Type your own answer" row we append to choice questions.
 const OTHER_LABEL = "Type your own answer";
 
-// Plain shapes used only by the form. `Option` comes from schemas.ts.
-export interface UiQuestion {
-    header: string;
-    questionText: string;
-    options: Option[];
-    isMultipleChoice: boolean;
-}
-
+// Shapes used only by the form. `Question`/`Option` come from schemas.ts.
 export interface Answer {
     header: string;
     question: string;
     values: string[];
-}
-
-export interface UiResult {
-    answers: Answer[];
 }
 
 type RenderOption = Option & { isOther?: boolean };
@@ -37,14 +26,14 @@ function isAnswered(answers: string[][], index: number): boolean {
     return answers[index].length > 0;
 }
 
-function allAnswered(questions: UiQuestion[], answers: string[][]): boolean {
+function allAnswered(questions: Question[], answers: string[][]): boolean {
     return questions.every((_, index) => isAnswered(answers, index));
 }
 
-function buildAnswers(questions: UiQuestion[], answers: string[][]): Answer[] {
+function buildAnswers(questions: Question[], answers: string[][]): Answer[] {
     return questions.map((question, index) => ({
         header: question.header,
-        question: question.questionText,
+        question: question.question,
         values: answers[index] ?? [],
     }));
 }
@@ -62,13 +51,13 @@ function buildAnswers(questions: UiQuestion[], answers: string[][]): Answer[] {
  */
 export function runForm(
     ctx: ExtensionContext,
-    questions: UiQuestion[],
+    questions: Question[],
     signal: AbortSignal,
-): Promise<UiResult | null> {
-    return ctx.ui.custom<UiResult | null>((tui, theme, keybindings, done) => {
+): Promise<Answer[] | null> {
+    return ctx.ui.custom<Answer[] | null>((tui, theme, keybindings, done) => {
         // `finished` guard: done() must only be called once.
         let finished = false;
-        const finish = (value: UiResult | null) => {
+        const finish = (value: Answer[] | null) => {
             if (finished) return;
             finished = true;
             done(value);
@@ -165,7 +154,7 @@ export function runForm(
         }
 
         // The list of options to show, plus the free-form row.
-        function currentOptions(question: UiQuestion): RenderOption[] {
+        function currentOptions(question: Question): RenderOption[] {
             const options: RenderOption[] = [...question.options];
             options.push({ label: OTHER_LABEL, isOther: true });
             return options;
@@ -245,7 +234,7 @@ export function runForm(
         function handleReviewInput(data: string) {
             if (isConfirm(data)) {
                 if (allAnswered(questions, answers)) {
-                    finish({ answers: buildAnswers(questions, answers) });
+                    finish(buildAnswers(questions, answers));
                 }
                 return;
             }
@@ -437,7 +426,7 @@ export function runForm(
         ) {
             const question = questions[questionIndex];
             const isEditingQuestion = editingQuestion === questionIndex;
-            addWithPrefix(" ", theme.fg("text", question.questionText));
+            addWithPrefix(" ", theme.fg("text", question.question));
             add("");
 
             // Free-form question: show the text input.
