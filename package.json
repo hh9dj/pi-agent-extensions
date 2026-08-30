@@ -1,0 +1,8 @@
+{
+  "name": "pi-agent-extensions",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Personal pi coding agent extensions (monorepo)",
+  "keywords": ["pi-package", "pi-extension"],
+  "license": "MIT"
+}
