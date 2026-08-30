@@ -1,9 +1,10 @@
 /**
- * clipboard — auto-copy the final assistant response to the system clipboard.
+ * clipboard — auto-copy the last user prompt + final assistant response to the system clipboard.
  *
  * After every `agent_settled` event (i.e. when the agent is truly done — no
  * retries, compaction retries, or queued follow-ups left), the last assistant
- * response text is copied. Uses pi's own `copyToClipboard()` helper (the same
+ * response is copied together with the user prompt that triggered it, separated
+ * by markdown headers. Uses pi's own `copyToClipboard()` helper (the same
  * one behind the built-in `/copy` command), which picks wl-copy/xclip/pbcopy
  * or OSC 52 depending on the environment — no extra dependency.
  *
@@ -38,22 +39,40 @@ export default function initExtension(pi: ExtensionAPI) {
         // Last assistant message on the current branch, like
         // examples/extensions/qna.ts. Entry wraps a message.
         const branch = ctx.sessionManager.getBranch();
+        let userText = "";
         let text = "";
         for (let i = branch.length - 1; i >= 0; i--) {
             const entry = branch[i];
             if (entry.type !== "message") continue;
             const msg = entry.message;
-            if ("role" in msg && msg.role === "assistant") {
+            if (!("role" in msg)) continue;
+
+            if (msg.role === "assistant" && !text) {
                 // Aborted/cancelled turn → don't copy the partial response.
                 if (msg.stopReason !== "stop") return;
                 text = msg.content
                     .filter((c): c is { type: "text"; text: string } => c.type === "text")
                     .map((c) => c.text)
                     .join("\n");
+            } else if (msg.role === "user" && text && !userText) {
+                // User content may be a plain string (e.g. a replayed prompt)
+                // or content blocks — unlike assistant messages.
+                userText =
+                    typeof msg.content === "string"
+                        ? msg.content
+                        : msg.content
+                              .filter((c): c is { type: "text"; text: string } => c.type === "text")
+                              .map((c) => c.text)
+                              .join("\n");
                 break;
             }
         }
         if (!text) return;
+
+        // Prepend the prompt that triggered this response, separated by headers.
+        if (userText) {
+            text = `## User\n\n${userText}\n\n## Assistant\n\n${text}`;
+        }
 
         try {
             await copyToClipboard(text);
