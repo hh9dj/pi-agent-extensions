@@ -5,7 +5,7 @@ Personal [pi coding agent](https://pi.dev) extensions, bundled as one git pi pac
 ## Install
 
 ```bash
-pi install git:github.com/hh9dj/pi-agent-extensions@main
+pi install git:github.com/hh9dj/pi-agent-extensions@master
 ```
 
 Or add to `~/.pi/agent/settings.json`:
@@ -13,7 +13,7 @@ Or add to `~/.pi/agent/settings.json`:
 ```json
 {
   "packages": [
-    "git:github.com/hh9dj/pi-agent-extensions@main"
+    "git:github.com/hh9dj/pi-agent-extensions@master"
   ]
 }
 ```
