@@ -12,6 +12,7 @@ import {
     allAnswered,
     buildAnswers,
     currentOptions,
+    customValues,
     isAnswered,
     type Answer,
     type FormState,
@@ -287,7 +288,7 @@ export class FormPanel implements Component {
             if (this.isConfirm(data)) {
                 const option = options[focus]!;
                 if (option.isOther) {
-                    this.beginEditing(this.tab, "");
+                    this.beginEditing(this.tab, customValues(question, this.answers[this.tab]!)[0] ?? "");
                     return;
                 }
                 if (isAnswered(this.answers, this.tab)) {
@@ -299,7 +300,7 @@ export class FormPanel implements Component {
             if (this.isConfirm(data)) {
                 const option = options[focus]!;
                 if (option.isOther) {
-                    this.beginEditing(this.tab, "");
+                    this.beginEditing(this.tab, customValues(question, this.answers[this.tab]!)[0] ?? "");
                     return;
                 }
                 this.saveAnswer(this.tab, [option.label]);

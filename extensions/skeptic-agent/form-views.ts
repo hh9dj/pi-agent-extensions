@@ -3,6 +3,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { LineWriter } from "./form-text";
 import {
     currentOptions,
+    customValues,
     isAnswered,
     allAnswered,
     type FormState,
@@ -93,11 +94,8 @@ export function renderQuestionView(
         }
     });
 
-    const optionLabels = new Set(options.map((o) => o.label));
-    const customValues = state.answers[questionIndex].filter(
-        (value) => !optionLabels.has(value),
-    );
-    for (const value of customValues) {
+    const customValuesList = customValues(question, state.answers[questionIndex]);
+    for (const value of customValuesList) {
         out.add("");
         out.addWithPrefix(" ", theme.fg("text", `✎ ${value}`));
     }

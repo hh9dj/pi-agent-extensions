@@ -22,6 +22,11 @@ export function currentOptions(question: Question): RenderOption[] {
     return [...question.options, { label: OTHER_LABEL, isOther: true }];
 }
 
+export function customValues(question: Question, answers: string[]): string[] {
+    const optionLabels = new Set(question.options.map((o) => o.label));
+    return answers.filter((value) => !optionLabels.has(value));
+}
+
 export function isAnswered(answers: string[][], index: number): boolean {
     return answers[index].length > 0;
 }
