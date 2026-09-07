@@ -208,8 +208,10 @@ export class FormPanel implements Component {
         }
         if (question.isMultipleChoice) {
             const current = this.answers[questionIndex]!;
-            if (!current.includes(trimmed)) current.push(trimmed);
-            this.saveAnswer(questionIndex, current);
+            const optionLabels = new Set(currentOptions(question).map((o) => o.label));
+            const picks = current.filter((value) => optionLabels.has(value));
+            if (!picks.includes(trimmed)) picks.push(trimmed);
+            this.saveAnswer(questionIndex, picks);
             this.refresh();
         } else {
             this.saveAnswer(questionIndex, [trimmed]);
