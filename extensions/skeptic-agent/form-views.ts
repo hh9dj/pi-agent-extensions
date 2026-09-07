@@ -58,10 +58,10 @@ export function renderQuestionView(
             const saved = state.answers[questionIndex][0];
             if (saved) {
                 out.addWithPrefix(" ", theme.fg("text", saved));
-                out.addWithPrefix(" ", theme.fg("dim", "Enter to edit • Tab/←→ tabs • Esc cancel"));
+                out.addWithPrefix(" ", theme.fg("dim", "Enter to edit • h/l tabs • Esc cancel"));
             } else {
                 out.addWithPrefix(" ", theme.fg("muted", "Free text answer"));
-                out.addWithPrefix(" ", theme.fg("dim", "Enter to type • Tab/←→ tabs • Esc cancel"));
+                out.addWithPrefix(" ", theme.fg("dim", "Enter to type • h/l tabs • Esc cancel"));
             }
         }
         return out.lines;
@@ -110,8 +110,8 @@ export function renderQuestionView(
 
     out.add("");
     const help = question.isMultipleChoice
-        ? "Space toggle • Enter next • Tab/←→ tabs • Esc cancel"
-        : "↑↓ select • Enter choose • Tab/←→ tabs • Esc cancel";
+        ? "Space toggle • j/k ↑↓ • h/l tabs • Enter next • Esc cancel"
+        : "j/k select • Enter choose • h/l tabs • Esc cancel";
     out.addWithPrefix(" ", theme.fg("dim", help));
 
     return out.lines;
@@ -144,7 +144,7 @@ export function renderReviewView(state: FormState, theme: Theme, width: number):
     out.addWithPrefix(" ", submitText);
 
     out.add("");
-    out.addWithPrefix(" ", theme.fg("dim", "Enter submit • Tab/←→ back • Esc cancel"));
+    out.addWithPrefix(" ", theme.fg("dim", "Enter submit • h/l back • Esc cancel"));
 
     return out.lines;
 }

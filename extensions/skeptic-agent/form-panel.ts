@@ -45,9 +45,6 @@ export class FormPanel implements Component {
             this.leaveEditing();
             this.refresh();
         };
-        if (questions[0]!.options.length === 0) {
-            this.beginEditing(0, "");
-        }
     }
 
     handleInput(data: string): void {
@@ -118,11 +115,11 @@ export class FormPanel implements Component {
     }
 
     private isUp(data: string): boolean {
-        return this.kb("tui.select.up", data);
+        return this.kb("tui.select.up", data) || matchesKey(data, "k");
     }
 
     private isDown(data: string): boolean {
-        return this.kb("tui.select.down", data);
+        return this.kb("tui.select.down", data) || matchesKey(data, "j");
     }
 
     private isConfirm(data: string): boolean {
@@ -134,11 +131,11 @@ export class FormPanel implements Component {
     }
 
     private isNext(data: string): boolean {
-        return this.kb("tui.input.tab", data) || this.kb("tui.editor.cursorRight", data);
+        return this.kb("tui.input.tab", data) || this.kb("tui.editor.cursorRight", data) || matchesKey(data, "l");
     }
 
     private isPrev(data: string): boolean {
-        return this.kb("tui.editor.cursorLeft", data) || matchesKey(data, Key.shift("tab"));
+        return this.kb("tui.editor.cursorLeft", data) || matchesKey(data, Key.shift("tab")) || matchesKey(data, "h");
     }
 
     private leaveEditing(): void {
@@ -166,12 +163,8 @@ export class FormPanel implements Component {
         }
         const question = this.questions[this.tab]!;
         if (question.options.length === 0) {
-            if (isAnswered(this.answers, this.tab)) {
-                this.leaveEditing();
-                this.refresh();
-            } else {
-                this.beginEditing(this.tab, "");
-            }
+            this.leaveEditing();
+            this.refresh();
             return;
         }
         this.leaveEditing();
