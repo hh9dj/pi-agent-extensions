@@ -1,23 +1,20 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { runForm, type Answer } from "../../extensions/skeptic-agent/form-tui";
+import { runForm } from "../../extensions/skeptic-agent/index";
 import type { Question } from "../../extensions/skeptic-agent/schemas";
 
 const FIXTURES: Question[] = [
     {
         question: "Describe the goal in one sentence.",
         header: "Goal",
-        isMultipleChoice: false,
         options: [],
     },
     {
         question: "Which data store should we use?",
         header: "Storage",
-        isMultipleChoice: false,
         options: [
             {
-                label: "SQLite",
+                label: "SQLite (Recommended)",
                 description: "Embedded, zero config, single file",
-                recommended: true,
             },
             {
                 label: "Postgres",
@@ -32,42 +29,46 @@ const FIXTURES: Question[] = [
     {
         question: "Which features ship in v1?",
         header: "Scope",
-        isMultipleChoice: true,
+        multiple: true,
         options: [
-            { label: "Search" },
-            { label: "Export to CSV" },
-            { label: "Dark mode" },
+            { label: "Search", description: "Full-text search over records" },
+            { label: "Export to CSV", description: "Download the current view" },
+            { label: "Dark mode", description: "Follow the system theme" },
         ],
     },
     {
         question: "Tab order OK?",
         header: "Nav",
-        isMultipleChoice: false,
-        options: [{ label: "Yes" }, { label: "No" }],
+        options: [
+            { label: "Yes", description: "Keep the current order" },
+            { label: "No", description: "Reorder the tabs" },
+        ],
     },
 ];
 
 export default function testSkeptic(pi: ExtensionAPI) {
     pi.registerCommand("test-skeptic", {
-        description: "Open the skeptic form with fixture questions (no LLM)",
-        handler: async (_args, ctx) => {
+        description:
+            "Open the skeptic form with fixture questions (no LLM). Pass `single` for a one-question form.",
+        handler: async (args, ctx) => {
             if (ctx.mode !== "tui") {
                 ctx.ui.notify("test-skeptic needs an interactive TUI", "warning");
                 return;
             }
+            const questions = args.trim() === "single" ? [FIXTURES[1]!] : FIXTURES;
             ctx.ui.setWorkingVisible(false);
-            let result: Answer[] | null;
+            let result: string[][] | null;
             try {
-                result = await runForm(ctx, FIXTURES, new AbortController().signal);
+                result = await runForm(ctx, questions, new AbortController().signal);
             } finally {
                 ctx.ui.setWorkingVisible(true);
             }
             if (!result) {
-                ctx.ui.notify("cancelled", "info");
+                ctx.ui.notify("dismissed", "info");
                 return;
             }
-            const summary = result
-                .map((a) => `${a.header}: ${a.values.join(", ") || "(none)"}`)
+            const summary = questions
+                .map((q, i) => `${q.header}: ${result[i]!.join(", ") || "(none)"}`)
                 .join("\n");
             ctx.ui.notify(`answers:\n${summary}`, "info");
         },
