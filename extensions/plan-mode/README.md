@@ -4,9 +4,9 @@ Read-only planning workflow for Pi with structured `plan_steps` tracking,
 persistent `.plan/plan-{date-time}.md` files, a centered `/todos` progress
 popup, and Zentui indicator integration.
 
-## Commands and Flags
+## Commands, Shortcuts, and Flags
 
-- `/plan`: toggle read-only plan mode on or off.
+- `/plan` or `Ctrl+Alt+P`: toggle read-only plan mode on or off.
 - `--plan`: start a session directly in plan mode.
 - `/todos` (alias `/plan-progress`): open a centered popup overlay showing the
   current mode, completion count, and all plan steps with status markers and

@@ -11,7 +11,7 @@ import type {
 	ExtensionContext,
 	ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { Key, Text } from "@earendil-works/pi-tui";
 import { savePlanMarkdownFile } from "./plan-file";
 import { PlanProgressOverlay } from "./progress-overlay";
 import { PlanStepsParamsSchema, type PlanStepsParams } from "./schemas";
@@ -300,6 +300,13 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		},
 	});
 
+	pi.registerShortcut(Key.ctrlAlt("p"), {
+		description: "Toggle plan mode",
+		handler: async (ctx) => {
+			togglePlanMode(ctx);
+		},
+	});
+
 	// ─── Structured Plan Tool ───────────────────────────────────────────────
 
 	// `defaultActive: false` is supported by Pi >= 1.x so the tool adds zero schema
@@ -554,7 +561,7 @@ You are currently in read-only plan mode.
 Rules:
 - Do NOT modify files, run write commands, or make state changes.
 - Built-in \`edit\` and \`write\` tools are disabled, and \`bash\` is restricted to read-only inspection commands.
-- Non-write tools (such as \`read\`, \`grep\`, \`find\`, \`ls\`, \`skeptic_agent\`, \`google_search\`, \`read_url_content\`, \`codemode\`) remain available for exploration and clarification.
+- All other currently active non-write tools remain available for exploration and clarification.
 - Inspect the codebase thoroughly before finalizing your plan.
 - Record your concrete, ordered step-by-step plan by calling the \`${PLAN_TOOL_NAME}\` tool with \`action: "set"\` (include concise step titles and useful details).
 - Present a clear summary of the plan to the user once recorded.${existingPlanSection}`,
