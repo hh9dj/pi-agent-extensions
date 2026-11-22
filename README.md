@@ -20,5 +20,6 @@ Or add to `~/.pi/agent/settings.json`:
 
 - [clipboard](extensions/clipboard/README.md)
 - [DeepSeek-tier](extensions/deepseek-tier/README.md)
+- [plan-mode](extensions/plan-mode/README.md)
 - [session-browser](extensions/session-browser/README.md)
 - [skeptic-agent](extensions/skeptic-agent/README.md)
