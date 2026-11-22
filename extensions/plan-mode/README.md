@@ -6,7 +6,7 @@ popup, and Zentui indicator integration.
 
 ## Commands, Shortcuts, and Flags
 
-- `/plan` or `Ctrl+Alt+P`: toggle read-only plan mode on or off.
+- `/plan`, `Shift+Tab`, or `Ctrl+Alt+P`: toggle read-only plan mode on or off.
 - `--plan`: start a session directly in plan mode.
 - `/todos` (alias `/plan-progress`): open a centered popup overlay showing the
   current mode, completion count, and all plan steps with status markers and
