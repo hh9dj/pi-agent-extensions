@@ -1,36 +1,11 @@
 /**
- * deepseek-tier — publish the DeepSeek peak/off-peak pricing tier as a footer
- * status, so a footer owner (zentui, or pi's native footer) renders it.
+ * deepseek-tier — publishes DeepSeek peak/off-peak pricing tier as a footer
+ * status (`deepseekTier`) when a DeepSeek model is active.
  *
- * Config: ~/.pi/agent/deepseek-tier.json
- *   {
- *     "enabled": true,
- *     "peakWindowsUtc": [[1, 4], [6, 10]],
- *     "labels": { "peak": "peak pricing", "offPeak": "off-peak pricing" }
- *   }
- *
- * Only publishes the status when the active model is a DeepSeek model.
- * Peak/off-peak is evaluated in UTC, Mon–Fri; weekends are always off-peak.
- * Status is refreshed every minute so hour-boundary changes land without a
- * manual redraw.
- *
- * The published text carries its own color (peak = red, off-peak = black).
- * Tell zentui to preserve it:
- *
- *   "components": {
- *     "footer": {
- *       "styles": {
- *         "starship": {
- *           "extensionStatuses": {
- *             "colorModes": { "deepseekTier": "original" }
- *           }
- *         }
- *       }
- *     }
- *   }
+ * Optional config: ~/.pi/agent/deepseek-tier.json
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
 	getAgentDir,
@@ -38,95 +13,87 @@ import {
 	type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 
-type DeepseekTierConfig = {
+type Config = {
 	enabled: boolean;
 	peakWindowsUtc: [number, number][];
 	labels: { peak: string; offPeak: string };
 };
 
 const STATUS_KEY = "deepseekTier";
-const DEEPSEEK_ICON = "🐋";
-const REFRESH_INTERVAL_MS = 60_000;
-
-const DEFAULT_CONFIG: DeepseekTierConfig = {
+const REFRESH_MS = 60_000;
+const DEFAULTS: Config = {
 	enabled: true,
 	peakWindowsUtc: [[1, 4], [6, 10]],
 	labels: { peak: "peak pricing", offPeak: "off-peak pricing" },
 };
 
-function loadConfig(): DeepseekTierConfig {
+function loadConfig(): Config {
 	try {
-		const path = join(getAgentDir(), "deepseek-tier.json");
-		if (!existsSync(path)) return DEFAULT_CONFIG;
-		const raw = JSON.parse(readFileSync(path, "utf8")) as Partial<DeepseekTierConfig>;
-		const labels: Partial<DeepseekTierConfig["labels"]> = raw.labels ?? {};
+		const raw = JSON.parse(readFileSync(join(getAgentDir(), "deepseek-tier.json"), "utf8"));
+		if (!raw || typeof raw !== "object") return DEFAULTS;
 		return {
-			enabled: typeof raw.enabled === "boolean" ? raw.enabled : DEFAULT_CONFIG.enabled,
+			enabled: typeof raw.enabled === "boolean" ? raw.enabled : DEFAULTS.enabled,
 			peakWindowsUtc: Array.isArray(raw.peakWindowsUtc)
-				? (raw.peakWindowsUtc as [number, number][])
-				: DEFAULT_CONFIG.peakWindowsUtc,
+				? raw.peakWindowsUtc.filter(
+						(w: unknown): w is [number, number] =>
+							Array.isArray(w) && typeof w[0] === "number" && typeof w[1] === "number",
+					)
+				: DEFAULTS.peakWindowsUtc,
 			labels: {
-				peak: typeof labels.peak === "string" ? labels.peak : DEFAULT_CONFIG.labels.peak,
+				peak: typeof raw.labels?.peak === "string" ? raw.labels.peak : DEFAULTS.labels.peak,
 				offPeak:
-					typeof labels.offPeak === "string"
-						? labels.offPeak
-						: DEFAULT_CONFIG.labels.offPeak,
+					typeof raw.labels?.offPeak === "string" ? raw.labels.offPeak : DEFAULTS.labels.offPeak,
 			},
 		};
 	} catch {
-		return DEFAULT_CONFIG;
+		return DEFAULTS;
 	}
 }
 
-function isDeepseekModel(model: ExtensionContext["model"]): boolean {
-	if (!model) return false;
-	return (
-		model.provider === "deepseek" ||
-		/deepseek/i.test(model.id) ||
-		/deepseek/i.test(model.name)
-	);
+function isDeepseek(model: ExtensionContext["model"]): boolean {
+	return Boolean(model && /deepseek/i.test(`${model.provider} ${model.id} ${model.name}`));
 }
 
-function tierAt(date: Date, windows: [number, number][]): "peak" | "offPeak" {
-	if (date.getUTCDay() < 1 || date.getUTCDay() > 5) return "offPeak";
+function isPeak(date: Date, windows: [number, number][]): boolean {
+	const day = date.getUTCDay();
+	if (day === 0 || day === 6) return false;
 	const hour = date.getUTCHours();
-	return windows.some(([start, end]) => hour >= start && hour < end)
-		? "peak"
-		: "offPeak";
-}
-
-function ansi(color: "red" | "black", text: string): string {
-	return `\x1b[${color === "red" ? 31 : 30}m${text}\x1b[0m`;
+	return windows.some(([start, end]) => hour >= start && hour < end);
 }
 
 export default function (pi: ExtensionAPI) {
+	const config = loadConfig();
+	if (!config.enabled) return;
+
 	let timer: ReturnType<typeof setInterval> | undefined;
+	const stop = () => {
+		clearInterval(timer);
+		timer = undefined;
+	};
 
 	const update = (ctx: ExtensionContext) => {
-		const config = loadConfig();
-		if (!config.enabled || !isDeepseekModel(ctx.model)) {
+		if (!isDeepseek(ctx.model)) {
 			ctx.ui.setStatus(STATUS_KEY, undefined);
 			return;
 		}
-		const tier = tierAt(new Date(), config.peakWindowsUtc);
-		const label = `${DEEPSEEK_ICON}: ${
-			tier === "peak" ? config.labels.peak : config.labels.offPeak
-		}`;
-		ctx.ui.setStatus(STATUS_KEY, ansi(tier === "peak" ? "red" : "black", label));
+		const peak = isPeak(new Date(), config.peakWindowsUtc);
+		const text = `🐋: ${peak ? config.labels.peak : config.labels.offPeak}`;
+		ctx.ui.setStatus(STATUS_KEY, ctx.ui.theme.fg(peak ? "error" : "muted", text));
 	};
 
 	pi.on("session_start", (_event, ctx) => {
+		stop();
 		update(ctx);
-		if (!timer) timer = setInterval(() => update(ctx), REFRESH_INTERVAL_MS);
+		if (ctx.hasUI) {
+			timer = setInterval(() => update(ctx), REFRESH_MS);
+			timer.unref?.();
+		}
 	});
 
 	pi.on("model_select", (_event, ctx) => update(ctx));
 
 	pi.on("session_shutdown", (_event, ctx) => {
-		if (timer) {
-			clearInterval(timer);
-			timer = undefined;
-		}
+		stop();
 		ctx.ui.setStatus(STATUS_KEY, undefined);
 	});
 }
